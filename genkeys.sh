@@ -215,6 +215,7 @@ ls ${OUT_DIR}/${FMP_CA_DIR}/*.pfx >/dev/null 2>&1 && KEYS_FOUND=1
 if [ "${KEYS_FOUND}" -eq 1 ]; then
     if [ "${FORCE}" -eq 1 ]; then
         echo "> Force flag enabled: overwriting existing keys!"
+        rm -rf ${OUT_DIR}/*
     else
         echo "> Existing keys found.  Aborting."
         exit 1
