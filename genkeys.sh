@@ -333,7 +333,7 @@ do
     key=$((key + 1))
 done
 openssl dgst -sha${SHA_HASH_SIZE} ${OUT_DIR}/qpsa_roots.bin >${OUT_DIR}/sha${SHA_HASH_SIZE}_roots_hash.txt
-rm ${OUT_DIR}/${OUT_DIR}/qpsa_roots.bin && true
+rm ${OUT_DIR}/qpsa_roots.bin && true
 log "> Created"
 
 # Generate FMP (Firmware Management Protocol keys)
