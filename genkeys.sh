@@ -134,7 +134,7 @@ parse_args()
             echo "--root-cert-subject: subject data for root cert(s)"
             echo "  Make sure to use quotes and place ### where the key # should go."
             echo "--root-cert-totalnum: set # of root certs to use. 1-4 allowed (default: ${ROOT_CERT_TOTALNUM})"
-            echo "--rsa-key-size: set RSA key size to 2048 or 4096"
+            echo "--rsa-key-size: set RSA key size to 2048 or 4096 (default: ${RSA_KEY_SIZE})"
             echo "--use-rsa: Use RSA instead of ECDSA for generating keys (default: use ECDSA)"
             exit 0
             ;;
