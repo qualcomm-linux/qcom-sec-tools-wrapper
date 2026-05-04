@@ -256,7 +256,7 @@ do
         log "Generate the intermediate certificate authority (CA) ${key} key and certificate"
 
         openssl ecparam -genkey -name secp384r1 -outform PEM -out ${OUT_DIR}/qpsa_attestca${key}.key
-        log "> Created EC Atrestation CA ${key} key"
+        log "> Created EC Attestation CA ${key} key"
 
         openssl req -new -key ${OUT_DIR}/qpsa_attestca${key}.key -out ${OUT_DIR}/ca${key}.csr \
             -subj "$(echo "${CA_CERT_SUBJECT}" | sed "s/###/${key}/g")" \
