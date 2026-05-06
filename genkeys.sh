@@ -558,6 +558,9 @@ cleanup_temp_files()
 {
 	log "Cleaning up"
 
+	# Go back the original dir
+	cd ${ORIG_DIR}
+
 	rm -f randfile
 	rm -f ${OUT_DIR}/randfile
 	rm -f ${OUT_DIR}/*.csr
@@ -565,6 +568,8 @@ cleanup_temp_files()
 
 	log "> Done"
 }
+
+trap cleanup_temp_files EXIT
 
 
 # Main
@@ -584,8 +589,6 @@ main()
 
     init_fmp_ca_dir
     generate_fmp_keys_and_certs
-
-    cleanup_temp_files
 }
 
 main "$@"
