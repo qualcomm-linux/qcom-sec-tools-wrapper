@@ -117,3 +117,8 @@ TODO steps to boot
 
 TODO gencapsule.sh
 
+## License
+
+This project is licensed under [The Clear BSD License](LICENSE).
+See [LICENSE](LICENSE) for the full text.
+
