@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+# Copyright (c) 2026 Qualcomm Technologies, Inc. and/or its subsidiaries.
+
 # docker build -t genkeys:latest .
 # docker run --rm -it -v $(pwd)/OEM-KEYS:/src/OEM-KEYS genkeys:latest
 

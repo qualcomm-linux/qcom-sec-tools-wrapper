@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+# Copyright (c) 2026 Qualcomm Technologies, Inc. and/or its subsidiaries.
 
 # Break on errors
 set -e
