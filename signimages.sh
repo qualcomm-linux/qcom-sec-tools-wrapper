@@ -354,6 +354,8 @@ sign_verify()
         fi
         for word in ${sign_hw_ver}
         do
+            # drop characters that not hexadecimal values (Example: 0x123abc)
+            word=$(echo "${word}" | tr -cd '0-9a-fx')
             if [[ "${HW_VER}" == *"[${word}]"* ]]; then
                 MATCH=${word}
             fi
