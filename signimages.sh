@@ -327,7 +327,7 @@ sign_verify()
     fi
 
     MATCH=""
-    bind_hw_ver=$(${SECTOOL} secure-image --inspect $1 | grep "| Bound to SoC Hardware Version" | cut -d'|' -f3 | head -n 1 | trim)
+    bind_hw_ver=$(${SECTOOL} secure-image --inspect $1 | grep "| Bound to SoC Hardware Version" | cut -d'|' -f3 | head -n 1 | awk '{$1=$1; print}')
     RESPONSE=$?
     if [ "${RESPONSE}" -ne 0 ]; then
         log_error "secure-image inspect "Hardware Version" failed for $1."
@@ -341,7 +341,7 @@ sign_verify()
     if [ "${bind_hw_ver}" = "False" ]; then
         MATCH="ANY"
     else
-        sign_hw_ver=$(${SECTOOL} secure-image --inspect $1 | grep "| SoC Hardware Version" | cut -d'|' -f3 | head -n 1 | trim | tr '[:upper:]' '[:lower:]')
+        sign_hw_ver=$(${SECTOOL} secure-image --inspect $1 | grep "| SoC Hardware Version" | cut -d'|' -f3 | head -n 1 | awk '{$1=$1; print}' | tr '[:upper:]' '[:lower:]')
         RESPONSE=$?
         if [ "${RESPONSE}" -ne 0 ]; then
             log_error "secure-image inspect "Hardware Version" failed for $1."
