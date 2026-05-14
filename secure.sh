@@ -199,7 +199,7 @@ parse_args()
             echo "--keys-root-hash-filename: roots hash filename (default: ${KEYS_ROOTS_HASH})"
             echo "--out-dir: output directory for signed images (default: ${OUT_DIR})"
             echo "--quiet: disable normal logging"
-            echo "--root-cert-totalnum: set # of root certs to use. 1-4 allowed (default: 4)"
+            echo "--root-cert-totalnum: set # of root certs to use. 1-4 allowed (default: ${ROOT_CERT_TOTALNUM})"
             echo "--sectoolv2: path to sectoolv2 binary"
             echo "--security-profile: path to *-security-profile.xml"
             echo "--signing-key-index: which CA key index to use for signing (default: ${SIGNING_KEY_INDEX})"
