@@ -407,7 +407,7 @@ openssl pkcs12 -passin "pass:${FMP_KEY_PASSWORD}" -in ${FMP_CA_DIR}/QcFMPCert.pf
 log "> Converted"
 
 log "Generate FMP root hex file"
-printf '0x%08x ' $(stat -c %s ${FMP_CA_DIR}/QcFMPRoot.cer) > ${FMP_CA_DIR}/QcFMPRoot.inc
+printf '0x%08x ' "$(stat -c %s ${FMP_CA_DIR}/QcFMPRoot.cer)" > ${FMP_CA_DIR}/QcFMPRoot.inc
 hexdump --no-squeezing -e '1/1 "0x%02x" 1/1 "%02x" 1/1 "%02x" 1/1 "%02x "' ${FMP_CA_DIR}/QcFMPRoot.cer | sed 's/ *$//' >> ${FMP_CA_DIR}/QcFMPRoot.inc
 log "> Generated"
 
