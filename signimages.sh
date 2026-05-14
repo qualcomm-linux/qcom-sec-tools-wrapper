@@ -4,7 +4,7 @@
 
 # Define the handler function
 cleanup() {
-    echo -e "\nInterrupt received! Cleaning up..."
+    printf '\nInterrupt received! Cleaning up...\n'
 
     # cleanup mounts
     if [ ! -z "${LOOP_DEVICE}" ]; then
@@ -18,7 +18,7 @@ cleanup() {
 }
 
 # register handler ctrl-c
-trap cleanup SIGINT
+trap cleanup INT
 
 # Settings
 VERSION="0.1"
@@ -72,23 +72,23 @@ log()
         return
     fi
     case "$1" in
-        ${LOG_ERROR})
+        "${LOG_ERROR}")
             shift
             echo >&2 "$(COLOR_RED '[ERROR]') $*"
             ;;
-        ${LOG_WARN})
+        "${LOG_WARN}")
             if [ "$1" -ge "${LOG_WARN}" ]; then
                 shift
                 echo "$(COLOR_YELLOW '[WARN]') $*"
             fi
             ;;
-        ${LOG_INFO})
+        "${LOG_INFO}")
             if [ "$1" -ge "${LOG_INFO}" ]; then
                 shift
                 echo "[INFO] $*"
             fi
             ;;
-        ${LOG_DEBUG})
+        "${LOG_DEBUG}")
             if [ "$1" -ge "${LOG_DEBUG}" ]; then
                 shift
                 echo "$(COLOR_DIM '[DEBUG]') $*"
@@ -354,9 +354,9 @@ sign_verify()
         fi
         for word in ${sign_hw_ver}
         do
-            if [[ "${HW_VER}" == *"[${word}]"* ]]; then
-                MATCH=${word}
-            fi
+            case "${HW_VER}" in
+                *"[${word}]"*) MATCH=${word} ;;
+            esac
         done
     fi
 
@@ -380,10 +380,12 @@ sign_verify()
         fi
     fi
 
-    if [[ "${IMAGE_ID}" == *SKIP:* ]]; then
-        log_warn "IMAGE-ID:SKIP for ${file}.  Skipping."
-        return 0
-    fi
+    case "${IMAGE_ID}" in
+        *SKIP:*)
+            log_warn "IMAGE-ID:SKIP for ${file}.  Skipping."
+            return 0
+            ;;
+    esac
 
     # Check to make sure the IMAGE_ID is valid for the supplied security-profile
     if echo "${VALID_IMAGE_ID}" | grep "${IMAGE_ID}" >/dev/null 2>&1; then
@@ -416,7 +418,7 @@ sign_verify()
         --outfile $1)
     RESPONSE=$?
     if [ "${RESPONSE}" -ne 0 ] || [ ! -z "${VERBOSE}" ]; then
-        echo -e "${OUTPUT}"
+        printf '%s\n' "${OUTPUT}"
         if [ "${RESPONSE}" -ne 0 ]; then
             log_error "secure-image sign failed for $1."
             if [ "${FLAG_CONTINUE}" -eq 0 ]; then
@@ -432,7 +434,7 @@ sign_verify()
         OUTPUT=$(${SUDO_FLAG} ${SCRIPT_PATH}/bin/pil-splitter $1 ${filedir}/${file%.*}.mdt)
         RESPONSE=$?
         if [ "${RESPONSE}" -ne 0 ] || [ ! -z "${VERBOSE}" ]; then
-            echo -e "${OUTPUT}"
+            printf '%s\n' "${OUTPUT}"
             if [ "${RESPONSE}" -ne 0 ]; then
                 log_error "pil-splitter failed."
                 if [ "${FLAG_CONTINUE}" -eq 0 ]; then
@@ -449,7 +451,7 @@ sign_verify()
     OUTPUT=$(${SECTOOL} secure-image ${VERBOSE} --verify-root ${ROOT_CERT_HASH} $1)
     RESPONSE=$?
     if [ "${RESPONSE}" -ne 0 ] || [ ! -z "${VERBOSE}" ]; then
-        echo -e "${OUTPUT}"
+        printf '%s\n' "${OUTPUT}"
         if [ "${RESPONSE}" -ne 0 ]; then
             log_error "secure-image verify of root cert hash failed for $1."
             if [ "${FLAG_CONTINUE}" -eq 0 ]; then
@@ -468,7 +470,7 @@ sign_verify()
         OUTPUT=$(${SECTOOL} secure-image ${VERBOSE} --verify-root ${ROOT_CERT_HASH} ${mdt_file})
         RESPONSE=$?
         if [ "${RESPONSE}" -ne 0 ] || [ ! -z "${VERBOSE}" ]; then
-            echo -e "${OUTPUT}"
+            printf '%s\n' "${OUTPUT}"
             if [ "${RESPONSE}" -ne 0 ]; then
                 log_error "secure-image verify of root cert hash failed for ${mdt_file}."
                 if [ "${FLAG_CONTINUE}" -eq 0 ]; then
@@ -492,7 +494,7 @@ setup_mount()
     OUTPUT=$(udisksctl loop-setup --no-user-interaction -f $1)
     RESPONSE=$?
     if [ "${RESPONSE}" -ne 0 ] || [ ! -z "${VERBOSE}" ]; then
-        echo -e "${OUTPUT}"
+        printf '%s\n' "${OUTPUT}"
         if [ "${RESPONSE}" -ne 0 ]; then
             log_error "setup_mount: Failed to assign $1 to a loop device"
             return 1
@@ -505,7 +507,7 @@ setup_mount()
     OUTPUT=$(udisksctl mount --no-user-interaction -b ${LOOP_DEVICE} -o rw)
     RESPONSE=$?
     if [ "${RESPONSE}" -ne 0 ] || [ ! -z "${VERBOSE}" ]; then
-        echo -e "${OUTPUT}"
+        printf '%s\n' "${OUTPUT}"
         if [ "${RESPONSE}" -ne 0 ]; then
             log_error "setup_mount: Failed to mount $1"
             udisksctl loop-delete --no-user-interaction -b ${LOOP_DEVICE} > /dev/null
@@ -580,13 +582,13 @@ if [ -z "${HW_VER}" ]; then
     HW_VER_RAW="$(sed -n '/<soc_hw_versions>/,/<\/soc_hw_versions>/p' ${SECURITY_PROFILE})"
     for line in ${HW_VER_RAW}
     do
-        if [[ "${line}" == *soc_hw_versions* ]]; then
-            continue
-        fi
+        case "${line}" in
+            *soc_hw_versions*) continue ;;
+        esac
         if [ -n "${HW_VER}" ]; then
             HW_VER="${HW_VER}|"
         fi
-        HW_VER="${HW_VER}[$(grep -oP '(?<=\<value\>).*?(?=\<\/value\>)' <<< "${line}" | tr '[:upper:]' '[:lower:]')]"
+        HW_VER="${HW_VER}[$(printf '%s' "${line}" | grep -oP '(?<=\<value\>).*?(?=\<\/value\>)' | tr '[:upper:]' '[:lower:]')]"
     done
 fi
 log_info "Signing images for HW Version(s): ${HW_VER}"
@@ -726,7 +728,7 @@ fi
 if [ -f "${OUT_DIR}/${XBL_CONFIG_FILENAME}" ] && [ -f "${FMP_PATH}/${FMP_ROOT_CER_FILE}" ]; then
     log_debug "Generate FMP root certificate hex file"
     rm -rf ./tmp-fmp-root-cert-hex.inc
-    printf '0x%08x ' $(stat -c %s ${FMP_PATH}/${FMP_ROOT_CER_FILE}) > ./tmp-fmp-root-cert-hex.inc
+    printf '0x%08x ' "$(stat -c %s ${FMP_PATH}/${FMP_ROOT_CER_FILE})" > ./tmp-fmp-root-cert-hex.inc
     hexdump --no-squeezing -e '1/1 "0x%02x" 1/1 "%02x" 1/1 "%02x" 1/1 "%02x "' ${FMP_PATH}/${FMP_ROOT_CER_FILE} | sed 's/ *$//' >> ./tmp-fmp-root-cert-hex.inc
     log_debug "> Generated"
 
@@ -737,7 +739,7 @@ if [ -f "${OUT_DIR}/${XBL_CONFIG_FILENAME}" ] && [ -f "${FMP_PATH}/${FMP_ROOT_CE
     OUTPUT=$(${SECTOOL} secure-image --dump ${OUT_DIR}/xbl_config-temp ${OUT_DIR}/${XBL_CONFIG_FILENAME})
     RESPONSE=$?
     if [ "${RESPONSE}" -ne 0 ]; then
-        echo -e "${OUTPUT}"
+        printf '%s\n' "${OUTPUT}"
         log_error "secure-image dump failed for ${OUT_DIR}/${XBL_CONFIG_FILENAME}."
         if [ "${FLAG_CONTINUE}" -eq 0 ]; then
             exit 1
@@ -756,7 +758,7 @@ if [ -f "${OUT_DIR}/${XBL_CONFIG_FILENAME}" ] && [ -f "${FMP_PATH}/${FMP_ROOT_CE
                     ${file} /sw/uefi/uefiplat QcCapsuleRootCert @list:./tmp-fmp-root-cert-hex.inc ${file}.new)
                 RESPONSE=$?
                 if [ "${RESPONSE}" -ne 0 ]; then
-                    echo -e "${OUTPUT}"
+                    printf '%s\n' "${OUTPUT}"
                     log_error "set_dtb_property failed for ${OUT_DIR}/${XBL_CONFIG_FILENAME}."
                     if [ "${FLAG_CONTINUE}" -eq 0 ]; then
                         rm -rf ${OUT_DIR}/xbl_config-temp
@@ -779,12 +781,12 @@ if [ -f "${OUT_DIR}/${XBL_CONFIG_FILENAME}" ] && [ -f "${FMP_PATH}/${FMP_ROOT_CE
     # if changed recombine
     if [ "${found_dtb}" -gt 0 ]; then
         log_debug "> Add patched segment back into ${XBL_CONFIG_FILENAME} and recalculate hash."
-        log_debug "> python3 ${SCRIPT_PATH}/cbsp-boot-utilities/uefi_capsule_generation/xblconfig_parser.py ${OUT_DIR}/${XBL_CONFIG_FILENAME} replace ${ph_num} ${file}.new ${OUT_DIR}/${XBL_CONFIG_FILENAME}.patched"
+        log_debug "> python3 ${SCRIPT_PATH}/cbsp-boot-utilities/uefi_capsule_generation/xblconfig_parser.py ${OUT_DIR}/${XBL_CONFIG_FILENAME} replace ${found_dtb} ${file}.new ${OUT_DIR}/${XBL_CONFIG_FILENAME}.patched"
         OUTPUT=$(python3 ${SCRIPT_PATH}/cbsp-boot-utilities/uefi_capsule_generation/xblconfig_parser.py ${OUT_DIR}/${XBL_CONFIG_FILENAME} replace \
             ${found_dtb} ${file}.new ${OUT_DIR}/${XBL_CONFIG_FILENAME}.patched)
         RESPONSE=$?
         if [ "${RESPONSE}" -ne 0 ]; then
-            echo -e "${OUTPUT}"
+            printf '%s\n' "${OUTPUT}"
             log_error "xblconfig_parser replace failed for ${OUT_DIR}/${XBL_CONFIG_FILENAME}."
             if [ "${FLAG_CONTINUE}" -eq 0 ]; then
                 rm -rf ${OUT_DIR}/xbl_config-temp
@@ -819,7 +821,7 @@ do
         OUTPUT=$(${SCRIPT_PATH}/bin/pil-squasher "${mbn_base}/${mbn_file}" ${file})
         RESPONSE=$?
         if [ "${RESPONSE}" -ne 0 ] || [ ! -z "${VERBOSE}" ]; then
-            echo -e "${OUTPUT}"
+            printf '%s\n' "${OUTPUT}"
         fi
         if [ "${RESPONSE}" -ne 0 ]; then
             log_error "pil-squasher failed for ${file}."
@@ -901,7 +903,7 @@ if [ ! -z "${UEFI_KEYS_PATH}" ]; then
         OUTPUT=$(sbsign --key ${UEFI_KEYS_PATH}/DB.key --cert ${UEFI_KEYS_PATH}/DB.crt ${file} --output ${file} 2>&1)
         RESPONSE=$?
         if [ "${RESPONSE}" -ne 0 ] || [ ! -z "${VERBOSE}" ]; then
-            echo -e "${OUTPUT}"
+            printf '%s\n' "${OUTPUT}"
         fi
         if [ "${RESPONSE}" -ne 0 ]; then
             log_error "UEFI: Failed to sign ${FILEPATH}"
@@ -963,7 +965,7 @@ if [ ! -z "${UEFI_KEYS_PATH}" ]; then
         OUTPUT=$(sbsign --key ${UEFI_KEYS_PATH}/DB.key --cert ${UEFI_KEYS_PATH}/DB.crt ${file} --output ${file})
         RESPONSE=$?
         if [ "${RESPONSE}" -ne 0 ] || [ ! -z "${VERBOSE}" ]; then
-            echo -e "${OUTPUT}"
+            printf '%s\n' "${OUTPUT}"
             if [ "${RESPONSE}" -ne 0 ]; then
                 log_error "UEFI: Failed to sign ${file}"
                 if [ "${FLAG_CONTINUE}" -eq 0 ]; then
