@@ -25,6 +25,10 @@ UEFI_KEYS_PATH=""
 
 # Flags
 DEBUG=0
+# TODO: --force is accepted on the CLI and documented in usage but the
+# variable is not yet wired into the file-exists guards; it remains a
+# no-op pending implementation. Disable SC2034 until then.
+# shellcheck disable=SC2034
 FORCE=0
 QUIET=0
 CREATE_SEC_ELF=0
@@ -56,6 +60,7 @@ parse_args()
             shift
             ;;
         --force)
+            # shellcheck disable=SC2034  # TODO: FORCE is parsed but not yet wired up
             FORCE=1
             echo "FLAG: Force overwrite: enabled"
             shift
@@ -308,12 +313,6 @@ KEYS_CA_CERT_FILENAME=$(echo "${KEYS_PATH}/${KEYS_CA_CERT}" | sed "s/###/${SIGNI
 if [ ! -f "${KEYS_CA_CERT_FILENAME}" ]; then
     echo >&2 "ERROR: Cannot find CA certificate: ${KEYS_CA_CERT_FILENAME}.  Aborting."
     exit 1
-fi
-
-# Signing data for more than 1 root key
-ROOT_CERT_INDEX=""
-if [ "${ROOT_CERT_TOTALNUM}" -gt 1 ]; then
-    ROOT_CERT_INDEX="--root-certificate-index ${SIGNING_KEY_INDEX}"
 fi
 
 VERBOSE=""
