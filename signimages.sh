@@ -52,6 +52,11 @@ COLOR_GREEN()  { _color "0;32" "$*"; }
 COLOR_YELLOW() { _color "0;33" "$*"; }
 COLOR_DIM()    { _color "2" "$*"; }
 
+# strip leading and trailing whitespace from stdin
+trim() {
+    sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+}
+
 # log levels
 LOG_ERROR=0
 LOG_WARN=1
