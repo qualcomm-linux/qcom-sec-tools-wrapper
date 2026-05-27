@@ -322,26 +322,22 @@ sign_verify()
         fi
     fi
     if [ -z "${sign_id}" ]; then
-        log_warn "Signatures not found in $1.  Skipping."
-        return 0
-    fi
-
-    MATCH=""
-    bind_hw_ver=$(${SECTOOL} secure-image --inspect $1 | grep "| Bound to SoC Hardware Version" | cut -d'|' -f3 | head -n 1 | trim)
-    RESPONSE=$?
-    if [ "${RESPONSE}" -ne 0 ]; then
-        log_error "secure-image inspect "Hardware Version" failed for $1."
-        if [ "${FLAG_CONTINUE}" -eq 0 ]; then
-            exit 1
+        # A freshly generated image such as the VIP DigestsToSign table
+        # carries no signature yet, so there is no embedded Software ID or
+        # HW-version binding to inspect.  Sign it anyway if we recognize it
+        # from the mapping; otherwise it is not something we sign, so skip.
+        if echo "${IMAGE_ID_MAPPING}" | grep -q "${file}"; then
+            log_debug "No signature in $1; signing as a mapped image."
+            # The HW-version binding is applied from the security profile at
+            # sign time, so accept any target HW version.
+            MATCH="ANY"
         else
-            RETURN_CODE=1
+            log_warn "Signatures not found in $1.  Skipping."
             return 0
         fi
-    fi
-    if [ "${bind_hw_ver}" = "False" ]; then
-        MATCH="ANY"
     else
-        sign_hw_ver=$(${SECTOOL} secure-image --inspect $1 | grep "| SoC Hardware Version" | cut -d'|' -f3 | head -n 1 | trim | tr '[:upper:]' '[:lower:]')
+        MATCH=""
+        bind_hw_ver=$(${SECTOOL} secure-image --inspect $1 | grep "| Bound to SoC Hardware Version" | cut -d'|' -f3 | head -n 1 | trim)
         RESPONSE=$?
         if [ "${RESPONSE}" -ne 0 ]; then
             log_error "secure-image inspect "Hardware Version" failed for $1."
@@ -352,19 +348,34 @@ sign_verify()
                 return 0
             fi
         fi
-        for word in ${sign_hw_ver}
-        do
-            case "${HW_VER}" in
-                *"[${word}]"*) MATCH=${word} ;;
-            esac
-        done
-    fi
+        if [ "${bind_hw_ver}" = "False" ]; then
+            MATCH="ANY"
+        else
+            sign_hw_ver=$(${SECTOOL} secure-image --inspect $1 | grep "| SoC Hardware Version" | cut -d'|' -f3 | head -n 1 | trim | tr '[:upper:]' '[:lower:]')
+            RESPONSE=$?
+            if [ "${RESPONSE}" -ne 0 ]; then
+                log_error "secure-image inspect "Hardware Version" failed for $1."
+                if [ "${FLAG_CONTINUE}" -eq 0 ]; then
+                    exit 1
+                else
+                    RETURN_CODE=1
+                    return 0
+                fi
+            fi
+            for word in ${sign_hw_ver}
+            do
+                case "${HW_VER}" in
+                    *"[${word}]"*) MATCH=${word} ;;
+                esac
+            done
+        fi
 
-    if [ -z "${MATCH}" ]; then
-        log_warn "HW version mismatch (${sign_hw_ver}) in $1.  Skipping."
-        return 0
-    else
-        log_debug "MATCH HW version: PROFILE:${HW_VER} vs. FILE:${MATCH}"
+        if [ -z "${MATCH}" ]; then
+            log_warn "HW version mismatch (${sign_hw_ver}) in $1.  Skipping."
+            return 0
+        else
+            log_debug "MATCH HW version: PROFILE:${HW_VER} vs. FILE:${MATCH}"
+        fi
     fi
 
     # Lookup the IMAGE-ID from mapping
