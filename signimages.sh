@@ -638,7 +638,7 @@ a663_zap.mbn GPU-MICRO-CODE 0 ${newline}\
 a702_zap.mbn GPU-MICRO-CODE 0 ${newline}\
 adsp.mbn ADSP 1 ${newline}\
 aop.mbn AOP 0 ${newline}\
-basic_sec.elf SEC-ELF 0 ${newline}\
+basic_sec.elf SKIP:SEC-ELF 0 ${newline}\
 CAMERA_ICP.mbn CAMERA-FW 0 ${newline}\
 cdsp.mbn CDSP 1 ${newline}\
 cdsp0.mbn CDSP0 0 ${newline}\
@@ -662,7 +662,7 @@ qupv3fw.elf QUPV3 0 ${newline}\
 rpm.mbn RPM 0 ${newline}\
 sailhyp.elf SKIP:UNKNOWN 0 ${newline}\
 sailsw1.elf SKIP:UNKNOWN 0 ${newline}\
-sec.elf SEC-ELF 0 ${newline}\
+sec.elf SKIP:SEC-ELF 0 ${newline}\
 shrm.elf SHRM 0 ${newline}\
 tz.mbn TZ 0 ${newline}\
 tzecotestapp.mbn TZ-APP-QTI 0 ${newline}\
