@@ -1,1 +1,8 @@
 OEM-KEYS/*
+
+# Local Makefile configuration, fetched tools and signing output
+.env
+.sectools/
+.qdl/
+signed-build/
+vip-tables/
