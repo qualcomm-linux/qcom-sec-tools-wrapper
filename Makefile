@@ -34,12 +34,12 @@ FETCHQDL:= ./fetch-qdl.sh
 UEFI_ARG := $(if $(QCOM_UEFI_KEYS),--uefi-keys-path $(QCOM_UEFI_KEYS),)
 
 .DEFAULT_GOAL := help
-.PHONY: help config deps deps-clean generate-keys sign-build flash gen-fuse-blower gen-capsule clean
+.PHONY: help config deps deps-clean generate-keys sign-build sign-build-with-fuse-blower flash gen-fuse-blower gen-capsule clean
 
 help: ## Show this help
 	@echo "qcom-sec-tools-wrapper -- make targets:"
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-		| awk 'BEGIN{FS=":.*?## "}{printf "  %-16s %s\n", $$1, $$2}'
+		| awk 'BEGIN{FS=":.*?## "}{printf "  %-30s %s\n", $$1, $$2}'
 	@echo ""
 	@echo "Configuration comes from .env (see .env.sample).  Start with: make config"
 
@@ -91,6 +91,34 @@ sign-build: guard-QCOM_SEC_PROFILE guard-QCOM_FLAT_BUILD deps ## Stage, sign and
 		exit 0; \
 	fi; \
 	QDL="$$($(FETCHQDL))"; \
+	echo "==> Creating VIP table of digests in $$vipdir"; \
+	rm -rf "$$vipdir"; mkdir -p "$$vipdir"; \
+	( cd "$$signdir" && "$$QDL" --allow-fusing --dry-run --create-digests="$$vipdir" \
+		$(QCOM_FIREHOSE) rawprogram*.xml patch*.xml ); \
+	"$$SECTOOL" mbn-tool generate --data "$$vipdir/DigestsToSign.bin" \
+		--mbn-version 6 --outfile "$$vipdir/DigestsToSign.bin.mbn"; \
+	echo "==> Signing VIP table"; \
+	$(SIGN) --sectoolv2 "$$SECTOOL" \
+		--keys-path "$(QCOM_ROT_KEYS)" \
+		--fmp-path "$(QCOM_FMP_KEYS)" \
+		--security-profile "$(QCOM_SEC_PROFILE)" \
+		--root-cert-totalnum "$(QCOM_ROOT_CERT_TOTALNUM)" \
+		--signing-key-index "$(QCOM_SIGNING_KEY_INDEX)" \
+		--out-dir "$$vipdir"
+
+# Same as sign-build but with the signed sec.elf integrated into rawprogram*.xml
+# BEFORE the VIP table is generated, so the digest table covers sec.elf and the
+# device can attest the secdata partition during VIP-validated programming.
+sign-build-with-fuse-blower: guard-QCOM_SEC_PROFILE guard-QCOM_FLAT_BUILD guard-QCOM_FUSE_OEM_HW_ID guard-QCOM_FUSE_OEM_PRODUCT_ID guard-QCOM_FUSE_SEC_KEY_DERIVATION_KEY deps ## sign-build + gen-fuse-blower + integrate sec.elf into rawprogram*.xml + VIP-sign (sec.elf covered)
+	@$(MAKE) --no-print-directory sign-build QCOM_VIP_DISABLE=1
+	@$(MAKE) --no-print-directory gen-fuse-blower
+	@set -e; \
+	signdir="$(abspath $(QCOM_SIGNED_BUILD))"; \
+	vipdir="$(abspath $(QCOM_VIP_DIR))"; \
+	SECTOOL="$$($(FETCH))"; \
+	QDL="$$($(FETCHQDL))"; \
+	echo "==> Integrating sec.elf into rawprogram*.xml under $$signdir"; \
+	sed -i '/label="secdata"/s/filename=""/filename="sec.elf"/g' "$$signdir"/rawprogram*.xml; \
 	echo "==> Creating VIP table of digests in $$vipdir"; \
 	rm -rf "$$vipdir"; mkdir -p "$$vipdir"; \
 	( cd "$$signdir" && "$$QDL" --allow-fusing --dry-run --create-digests="$$vipdir" \
