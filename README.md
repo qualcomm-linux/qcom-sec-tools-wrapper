@@ -89,6 +89,7 @@ and `QCOM_STORAGE` (default `ufs`).
   `cbsp-boot-utilities` submodule (`git submodule update --init`).
 * `make clean`: remove `signed-build/` and the VIP tables.
 * `make deps-clean`: remove the fetched tools and profiles.
+* `make test`: run the test suite under `tests/`.
 
 ## Fuse identifiers
 

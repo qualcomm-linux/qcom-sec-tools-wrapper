@@ -54,7 +54,7 @@ define vip_sign
 endef
 
 .DEFAULT_GOAL := help
-.PHONY: help config deps deps-clean generate-keys sign-build sign-build-with-fuse-blower flash gen-fuse-blower gen-capsule clean
+.PHONY: help config deps deps-clean generate-keys sign-build sign-build-with-fuse-blower flash gen-fuse-blower gen-capsule clean test
 
 help: ## Show this help
 	@echo "qcom-sec-tools-wrapper -- make targets:"
@@ -161,3 +161,6 @@ deps-clean: ## Remove fetched tools and security profiles
 clean: ## Remove the staged signed build (QCOM_SIGNED_BUILD and QCOM_VIP_DIR)
 	rm -rf "$(QCOM_SIGNED_BUILD)" "$(QCOM_VIP_DIR)"
 
+# Run with a clean environment so a local .env cannot leak into the tests.
+test: ## Run the test suite
+	@for t in tests/test-*.sh; do env -i PATH="$$PATH" HOME="$$HOME" sh "$$t" || exit 1; done
