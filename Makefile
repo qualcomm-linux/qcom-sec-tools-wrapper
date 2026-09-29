@@ -54,7 +54,7 @@ define vip_sign
 endef
 
 .DEFAULT_GOAL := help
-.PHONY: help config deps deps-clean generate-keys sign-build flash gen-fuse-blower gen-capsule clean
+.PHONY: help config deps deps-clean generate-keys sign-build sign-build-with-fuse-blower flash gen-fuse-blower gen-capsule clean
 
 help: ## Show this help
 	@echo "qcom-sec-tools-wrapper -- make targets:"
@@ -102,6 +102,21 @@ sign-build: guard-QCOM_SEC_PROFILE guard-QCOM_FLAT_BUILD deps ## Stage, sign and
 		exit 0; \
 	fi; \
 	QDL="$$($(FETCHQDL))"; \
+	$(vip_sign)
+
+# The VIP table must be generated after sec.elf is wired into rawprogram*.xml
+# so its digest is covered.
+sign-build-with-fuse-blower: guard-QCOM_SEC_PROFILE guard-QCOM_FLAT_BUILD guard-QCOM_FUSE_OEM_HW_ID guard-QCOM_FUSE_OEM_PRODUCT_ID guard-QCOM_FUSE_SEC_KEY_DERIVATION_KEY deps ## sign-build + gen-fuse-blower, with sec.elf in rawprogram*.xml and the VIP table
+	@$(MAKE) --no-print-directory sign-build QCOM_VIP_DISABLE=1
+	@$(MAKE) --no-print-directory gen-fuse-blower
+	@set -e; \
+	signdir="$(abspath $(QCOM_SIGNED_BUILD))"; \
+	vipdir="$(abspath $(QCOM_VIP_DIR))"; \
+	SECTOOL="$$($(FETCH))"; \
+	SECPROFILE="$$($(FETCHPROFILE))"; \
+	QDL="$$($(FETCHQDL))"; \
+	echo "==> Integrating sec.elf into rawprogram*.xml under $$signdir"; \
+	sed -i '/label="secdata"/s/filename=""/filename="sec.elf"/g' "$$signdir"/rawprogram*.xml; \
 	$(vip_sign)
 
 flash: ## Flash QCOM_SIGNED_BUILD to a connected device via qdl (uses the signed VIP table)
